@@ -1,0 +1,125 @@
+# Load plyr package for ddply#
+library(plyr)#
+#
+# Read data into R#
+data <- read.csv("~/Dropbox/Geladas/data_021116.csv", header=TRUE, stringsAsFactors=FALSE)#
+#
+# Convert time data to POSIXct#
+data$Smp.date <- as.POSIXct(data$Smp.date, format="%m/%d/%Y")#
+data$DOB <- as.POSIXct(data$DOB, format="%m/%d/%Y")#
+#
+# Convert POSITIVE/negative to 1/0#
+data$Results[data$Results=="POSITIVE"] <- 1#
+data$Results[data$Results=="negative"] <- 0#
+#
+# Subset to SK monkeys with recorded birthdates#
+data.sk <- data[data$Site=="SK" & !is.na(data$DOB) & data$Results %in% c(0,1),]
+w
+# Checking data#
+x <- ddply(data.sk, .(Name), function(x) {#
+  data.frame(#
+    Smps=length(unique(x$Smp.date)),#
+    Sex=x$Sex[1], #
+    DOB=x$DOB[1])#
+}) # all indivs in SK#
+nrow(x) # 191 individuals#
+table(x$Sex) # 107 females, 84 males#
+hist(x$DOB, breaks=10) # distribution of birthdates#
+#
+# subset to indivs w >1 dates sampled#
+x2 <- x[which(x$Smps > 1),] #
+nrow(x2) # 107 individuals#
+table(x2$Sex) # 57 females, 50 males#
+hist(x2$DOB, breaks=10) # distribution of birthdates#
+#
+# Probability that individuals were positive at some point#
+x3 <- ddply(data.sk, .(Name), function(x) {#
+  pos <- ifelse (1 %in% x$Results, 1, 0)#
+  data.frame(#
+    Pos=pos,#
+    SmpDates=length(unique(x$Smp.date)), #
+    SmpSpan=c(x$Smp.date[nrow(x)] - x$Smp.date[1]),#
+    Sex=x$Sex[1], #
+    DOB=x$DOB[1])#
+})#
+table(x3$Pos) # 142 negative, 49 positive at least once#
+#
+# Probability of a negative sample in individuals who were positive at a point prior to #
+# their last sampling#
+x4 <- ddply(data.sk[data.sk$Name %in% x2$Name,], .(Name), function(x) {#
+  x <- x[!duplicated(x$Smp.date),]#
+  x <- x[order(x$Smp.date),]#
+  keep <- ifelse (1 %in% x$Results[-nrow(x)], 1, 0)#
+  trans <- ifelse (grepl("10", paste(x$Results, collapse="")), 1, 0)#
+  data.frame(Keep=keep,#
+             Trans=trans,#
+             SmpDates=length(unique(x$Smp.date)), #
+             SmpSpan=c(x$Smp.date[nrow(x)] - x$Smp.date[1]),#
+             Sex=x$Sex[1], #
+             DOB=x$DOB[1])#
+})
+# Create data for figures#
+fig1 <- data.sk[data.sk$Name %in% x2$Name,]#
+fig1m <- fig1[fig1$Sex == "M",]#
+fig1f <- fig1[fig1$Sex == "F",]#
+#
+# Names ordered by age#
+m.names <- ddply(fig1m, .(Name), function(x){#
+  x <- x[order(x$Smp.date),]#
+  data.frame(x$DOB[1], x$Age[1])#
+})#
+f.names <- ddply(fig1f, .(Name), function(x){#
+  x <- x[order(x$Smp.date),]#
+  data.frame(x$DOB[1], x$Age[1])#
+})#
+m.names <- m.names[order(m.names[,2], decreasing=T),]#
+m.names[,3] <- as.character(m.names[,3])#
+f.names <- f.names[order(f.names[,2], decreasing=T),]#
+f.names[,3] <- as.character(f.names[,3])#
+m.names[m.names[,3]=="I",3] <- paste(m.names[m.names[,3]=="I",3], 1:sum(m.names[,3]=="I"), sep="")#
+m.names[m.names[,3]=="J",3] <- paste(m.names[m.names[,3]=="J",3], 1:sum(m.names[,3]=="J"), sep="")#
+m.names[m.names[,3]=="SA",3] <- paste(m.names[m.names[,3]=="SA",3], 1:sum(m.names[,3]=="SA"), sep="")#
+m.names[m.names[,3]=="A",3] <- paste(m.names[m.names[,3]=="A",3], 1:sum(m.names[,3]=="A"), sep="")#
+f.names[f.names[,3]=="I",3] <- paste(f.names[f.names[,3]=="I",3], 1:sum(f.names[,3]=="I"), sep="")#
+f.names[f.names[,3]=="J",3] <- paste(f.names[f.names[,3]=="J",3], 1:sum(f.names[,3]=="J"), sep="")#
+f.names[f.names[,3]=="SA",3] <- paste(f.names[f.names[,3]=="SA",3], 1:sum(f.names[,3]=="SA"), sep="")#
+f.names[f.names[,3]=="A",3] <- paste(f.names[f.names[,3]=="A",3], 1:sum(f.names[,3]=="A"), sep="")#
+#
+# Two panel plot#
+quartz()#
+layout(matrix(1:2, 1, 2))#
+#
+# Males#
+plot(c(1:10)~c(1:10), ylim=c(0,nrow(m.names)), xlim=c(min(fig1m$Smp.date), max(fig1m$Smp.date)), type="n", xaxt="n", yaxt="n", xlab="Sample date", ylab="Individual", main="Males (n = 50)")#
+ddply(fig1[fig1$Sex=="M",], .(Name), function(x) {#
+  x <- x[!duplicated(x$Smp.date),]#
+  x <- x[order(x$Smp.date),]#
+  cols <- ifelse(x$Results==1, "black", "white")#
+  pos <- which(m.names[,1]==x$Name[1])#
+  #points(rep(pos, nrow(x)) ~ Smp.date, data=x, type="l", col="gray")#
+  abline(h=pos, col="gray", lty=3)#
+  points(rep(pos, nrow(x)) ~ Smp.date, data=x, pch=21, bg=cols, cex=0.5)#
+})#
+axis(side=2, at=1:nrow(m.names), labels=m.names[,3], las=2, cex.axis=0.3, tcl=-0.2, mgp=c(3,0.3,0))#
+xdates <- c("Aug 2014", "Sep 2014", "Oct 2014", "Apr 2015", "May 2015", "June 2015")#
+xpos <- as.POSIXct(c("2014/08/01", "2014/09/01", "2014/10/01", "2015/04/01", "2015/05/01", "2015/06/01"), format="%Y/%m/%d")#
+axis(side=1, at=xpos, labels=FALSE)#
+text(x=xpos, y=rep(-7, length(xpos)), labels=xdates, cex=0.75, srt=45, pos=1, xpd=T)#
+#
+# Add legend#
+legend(1402047062, 63.27607, legend=c("Positive", "Negative"), pch=21, pt.bg=c("black", "white"), xpd=TRUE, cex=0.75)#
+#
+# Females#
+plot(c(1:10)~c(1:10), ylim=c(0,nrow(f.names)), xlim=c(min(fig1f$Smp.date), max(fig1f$Smp.date)), type="n", xaxt="n", yaxt="n", xlab="Sample date", ylab="", main="Females (n = 57)")#
+ddply(fig1[fig1$Sex=="F",], .(Name), function(x) {#
+  x <- x[!duplicated(x$Smp.date),]#
+  x <- x[order(x$Smp.date),]#
+  cols <- ifelse(x$Results==1, "black", "white")#
+  pos <- which(f.names[,1]==x$Name[1])#
+  #points(rep(pos, nrow(x)) ~ Smp.date, data=x, type="l", col="gray")#
+  abline(h=pos, col="gray", lty=3)#
+  points(rep(pos, nrow(x)) ~ Smp.date, data=x, pch=21, bg=cols, cex=0.5)#
+})#
+axis(side=2, at=1:nrow(f.names), labels=f.names[,3], las=2, cex.axis=0.3, tcl=-0.2, mgp=c(3,0.3,0))#
+axis(side=1, at=xpos, labels=FALSE)#
+text(x=xpos, y=rep(-7, length(xpos)), labels=xdates, cex=0.75, srt=45, pos=1, xpd=T)
