@@ -2,8 +2,10 @@
 # PREPARATIONS
 #########################################################################
 
-# Load plyr package for ddply
+# Load plyr package for ddply and MASS for neg binom GLM
 library(plyr)
+library(MASS)
+library(lmtest)
 
 # Read data into R
 data <- read.csv("~/Dropbox/Geladas/data_021116.csv", header=TRUE, stringsAsFactors=FALSE)
@@ -19,7 +21,7 @@ data$Results[data$Results=="negative"] <- 0
 # Convert cyst/no cyst to 1/0
 data$Cyst <- ifelse(data$Cyst=="Y", 1, 0)
 
-# Subset to SK monkeys with recorded birthdates
+# Subset to SK monkeys with recorded birthdates and non-borderline results
 data.sk <- data[data$Site=="SK" & !is.na(data$DOB) & data$Results %in% c(0,1),]
 
 #########################################################################
@@ -38,18 +40,21 @@ x <- ddply(data.sk, .(Name), function(x) {
 #hist(x$DOB, breaks=10) # distribution of birthdates
 
 # SK subsetted to indivs with >1 dates sampled
-x2 <- x[which(x$Smps > 1),] 
-nrow(x2) # 107 individuals
-table(x2$Sex) # 57 females, 50 males
+x2 <- x[x$Smps > 1,] 
+#nrow(x2) # 107 individuals
+#table(x2$Sex) # 57 females, 50 males
 #hist(x2$DOB, breaks=10) # distribution of birthdates
 
 # Probability that SK indivs were positive at some point
 x3 <- ddply(data.sk, .(Name), function(x) {
+  x <- x[!duplicated(x$Smp.date),]
   pos <- ifelse (1 %in% x$Results, 1, 0)
+  numpos <- sum(x$Results=="1")
   data.frame(
     Pos=pos,
+    NumPos=numpos,
     Cyst=unique(x$Cyst),
-    SmpDates=length(unique(x$Smp.date)), 
+    SmpDates=length(x$Smp.date), 
     SmpSpan=c(x$Smp.date[nrow(x)] - x$Smp.date[1]),
     Sex=x$Sex[1], 
     Age=x$Age[1],
@@ -74,6 +79,7 @@ x4 <- ddply(data.sk[data.sk$Name %in% x2$Name,], .(Name), function(x) {
              Age=x$Age[1],
              DOB=x$DOB[1])
 })
+# nrow(x4) # 107 individuals
 
 #########################################################################
 # VISUALIZE OD VALUE DISTRIBUTIONS FOR CYST AND NON-CYST INDIVS
@@ -93,7 +99,7 @@ abline(v=log(25.56 - 5 + 16)*10, col="red", lwd=2)
 abline(v=log(25.56 + 5 + 16)*10, col="red", lwd=2)
 
 # Which individual has a cyst and lies below the cutoff
-data.sk$Name[which(data.sk$Cyst==1 & data.sk$ODV<37.5)] # Mary
+data.sk$Name[data.sk$Cyst==1 & data.sk$ODV<37.5] # Mary
 
 #########################################################################
 # VISUALIZE SAMPLE RESULTS AND DATES FOR ALL SK INDIVIDUALS
@@ -193,23 +199,37 @@ arrows(x0=c(pp.bplot), y0=err.lower, x1=c(pp.bplot), y1=err.upper, length=0.07, 
 # MODELS
 #########################################################################
 
-# Probability of having a cyst
+# Probability of having a cyst (n=191)
 mod0 <- glm(Cyst ~ Sex + DOB, data=x3, family="binomial")
 summary(mod0) # DOB p<0.01
 
-# Probability of testing positive in at least one sample
+# Probability of testing positive in at least one sample (n=191)
 mod1 <- glm(Pos ~ Sex + DOB + SmpDates, data=x3, family="binomial")
 summary(mod1) # DOB p<0.05, SmpDates p<0.01
 mod2 <- glm(Pos ~ Sex + DOB + SmpSpan, data=x3, family="binomial")
 summary(mod2) # DOB<0.01, SmpSpan p<0.1
 
-# Probability of testing negative after testing positive
-mod3 <- glm(Trans ~ Sex + DOB + SmpDates, data=x4, family="binomial")
-summary(mod3) # SmpDates p<0.05
-mod4 <- glm(Trans ~ Sex + DOB + SmpSpan, data=x4, family="binomial")
-summary(mod4) # SmpSpan p<0.01
+# Number of positive samples (poisson model, n=191)
+mod3.0 <- glm(NumPos ~ Sex + DOB + SmpDates, data=x3, family="poisson")
+summary(mod3.0) # SexM p<0.1, DOB p<0.001, SmpDates p<0.001
+mod4.0 <- glm(NumPos ~ Sex + DOB + SmpSpan, data=x3, family="poisson")
+summary(mod4.0) # SexM p<0.01, DOB p<0.001, SmpSpan p<0.05
 
-# Length of IBI as a function of infection status
+# Number of positive samples (neg binomial model, n=191)
+mod3.1 <- glm.nb(NumPos ~ Sex + DOB + SmpDates, data=x3)
+summary(mod3.1) # DOB p<0.001, SmpDates p<0.001
+mod4.1 <- glm.nb(NumPos ~ Sex + DOB + SmpSpan, data=x3)
+summary(mod4.1) # SexM p<0.05, DOB p<0.001, SmpSpan p<0.05
+
+# Compare poisson and negative binomial
+lrtest(mod3.1, mod3.0)
+lrtest(mod4.1, mod4.0)
+
+# Probability of testing negative after testing positive (n=32)
+mod5 <- glm(Trans ~ Sex + DOB + SmpDates, data=x4[x4$Keep==1,], family="binomial")
+summary(mod5) # nothing significant
+mod6 <- glm(Trans ~ Sex + DOB + SmpSpan, data=x4[x4$Keep==1,], family="binomial")
+summary(mod6) # SmpSpan p<0.1
 
 
 
