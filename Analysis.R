@@ -14,9 +14,9 @@ data <- read.csv("~/Dropbox/Geladas/data_021116.csv", header=TRUE, stringsAsFact
 data$Smp.date <- as.POSIXct(data$Smp.date, format="%m/%d/%Y")
 data$DOB <- as.POSIXct(data$DOB, format="%m/%d/%Y")
 
-# Convert POSITIVE/negative to 1/0
-data$Results[data$Results=="POSITIVE"] <- 1
-data$Results[data$Results=="negative"] <- 0
+# Convert Status to 1/0
+data$Results[data$Results=="P"] <- 1
+data$Results[data$Results=="N"] <- 0
 
 # Convert cyst/no cyst to 1/0
 data$Cyst <- ifelse(data$Cyst=="Y", 1, 0)
@@ -217,7 +217,7 @@ summary(mod4.0) # SexM p<0.01, DOB p<0.001, SmpSpan p<0.05
 
 # Number of positive samples (neg binomial model, n=191)
 mod3.1 <- glm.nb(NumPos ~ Sex + DOB + SmpDates, data=x3)
-summary(mod3.1) # DOB p<0.001, SmpDates p<0.001
+summary(mod3.1) # DOB p<0.05, SmpDates p<0.001
 mod4.1 <- glm.nb(NumPos ~ Sex + DOB + SmpSpan, data=x3)
 summary(mod4.1) # SexM p<0.05, DOB p<0.001, SmpSpan p<0.05
 
