@@ -4,7 +4,7 @@
 
 # Load packages
 library(Deducer) # For G-test
-library(survival) # For Cox model
+library(survival) # For Cox models
 
 # Read data into R
 lh_wide <- read.csv("~/Desktop/GitHub/Gelada_parasites/Data/lh_wide.csv", header=TRUE, stringsAsFactors=FALSE)
@@ -59,19 +59,19 @@ sum(is.na(lh_wide$dod[lh_wide$sex=="M"])) # 157 males did not die
 sum(lh_wide$sex=="F" & lh_wide$dis==1)/sum(lh_wide$sex=="F") # 0 of 218 females disappeared
 sum(lh_wide$sex=="M" & lh_wide$dis==1)/sum(lh_wide$sex=="M") # 36 of 170 (21.2% of males disappeared)
 36/157 # 22.9% of censored males 'disappeared'
-lh_wide <- lh_wide[!lh_wide$dis==1,-which(names(lh_wide)=="dis")]
+lh_wide2 <- lh_wide[!lh_wide$dis==1,-which(names(lh_wide)=="dis")]
 
 # New number of adults, males, and females 
-nrow(lh_wide) # 352 individuals
-sum(lh_wide$sex=="M") # 134 males
-sum(lh_wide$sex=="F") # 218 females
+nrow(lh_wide2) # 352 individuals
+sum(lh_wide2$sex=="M") # 134 males
+sum(lh_wide2$sex=="F") # 218 females
 
 # Number/proportion of adults dying with/without cysts over study period
-tab1 <- table(!is.na(lh_wide$dod), !is.na(lh_wide$cyst))
+tab1 <- table(!is.na(lh_wide2$dod), !is.na(lh_wide2$cyst))
 tab1[2,]/colSums(tab1)	# 16% without cysts die; 61.5% with cysts die
-tab2 <- table(!is.na(lh_wide$dod[lh_wide$sex=="M"]), !is.na(lh_wide$cyst[lh_wide$sex=="M"]))
+tab2 <- table(!is.na(lh_wide2$dod[lh_wide2$sex=="M"]), !is.na(lh_wide$cyst[lh_wide$sex=="M"]))
 tab2[2,]/colSums(tab2)	# 8.2% without cysts die; 25% with cysts die
-tab3 <- table(!is.na(lh_wide$dod[lh_wide$sex=="F"]), !is.na(lh_wide$cyst[lh_wide$sex=="F"]))
+tab3 <- table(!is.na(lh_wide2$dod[lh_wide2$sex=="F"]), !is.na(lh_wide$cyst[lh_wide$sex=="F"]))
 tab3[2,]/colSums(tab3) # 21.3% without cysts die; 72.5% with cysts die
 
 # G-test for association between cysts and deaths over study period
@@ -86,14 +86,16 @@ likelihood.test(tab3) # Highly significant in females  (p < 0.001)
 # Barplots for mortality among males/females with/without cysts
 quartz()
 layout(matrix(1:2, 1, 2))
-bplot2 <- barplot(rev(tab3[2,]/colSums(tab3)), col=c("dimgray", "lightgray"), ylim=c(0,1), xlab="Females", ylab="% adults who died during study", names.arg=c("Cyst (29/40)", "No cyst (38/178)"))
-errs.c <- prop.test(tab3[2,2], colSums(tab3)[2])
-errs.n <- prop.test(tab3[2,1], colSums(tab3)[1])
-arrows(x0=c(bplot2), y0=c(errs.c$conf.int[1], errs.n$conf.int[1]), x1=c(bplot2), y1=c(errs.c$conf.int[2], errs.n$conf.int[2]), length=0.07, angle=90, code=3)
-bplot3 <- barplot(rev(tab2[2,]/colSums(tab2)), col=c("dimgray", "lightgray"), ylim=c(0,1), xlab="Males", names.arg=c("Cyst (3/12)", "No cyst (9/121)"))
+bplotF <- barplot(rev(tab2[2,]/colSums(tab2)), col=c("dimgray", "lightgray"), ylim=c(0,1), xlab="Males", names.arg=c("Cyst (3/12)", "No cyst (9/121)"), ylab="% adults who died during study")
 errs.c2 <- prop.test(tab2[2,2], colSums(tab2)[2])
 errs.n2 <- prop.test(tab2[2,1], colSums(tab2)[1])
-arrows(x0=c(bplot3), y0=c(errs.c2$conf.int[1], errs.n2$conf.int[1]), x1=c(bplot3), y1=c(errs.c2$conf.int[2], errs.n2$conf.int[2]), length=0.07, angle=90, code=3)
+arrows(x0=c(bplotF), y0=c(errs.c2$conf.int[1], errs.n2$conf.int[1]), x1=c(bplot3), y1=c(errs.c2$conf.int[2], errs.n2$conf.int[2]), length=0.07, angle=90, code=3)
+mtext("A", line=2, cex=1.5, adj=0)
+bplotM <- barplot(rev(tab3[2,]/colSums(tab3)), col=c("dimgray", "lightgray"), ylim=c(0,1), xlab="Females", ylab="", names.arg=c("Cyst (29/40)", "No cyst (38/178)"))
+errs.c <- prop.test(tab3[2,2], colSums(tab3)[2])
+errs.n <- prop.test(tab3[2,1], colSums(tab3)[1])
+arrows(x0=c(bplotM), y0=c(errs.c$conf.int[1], errs.n$conf.int[1]), x1=c(bplot2), y1=c(errs.c$conf.int[2], errs.n$conf.int[2]), length=0.07, angle=90, code=3)
+mtext("B", line=2, cex=1.5, adj=0)
 
 #################################################
 ## line plot showing individual life histories #
@@ -112,7 +114,7 @@ par(mar=c(5, 6, 4, 2))
 plot(0:(nrow(lp)+1) ~ seq(0, 25, length.out=length(0:(nrow(lp)+1))), data=lp, type="n", yaxt="n", ylab="", xlab="Time (years)")
 ynames <- c(lp$name[lp$sex=="F"], "", lp$name[lp$sex=="M"])
 axis(side=2, at=1:length(ynames), labels=ynames, las=2, cex.axis=0.5, tcl=0, mgp=c(3, 0.3, 0)) # y axis
-text(x=c(-5, -5), y=c(53, 40), labels=c("Males", "Females"), xpd=TRUE) # Indicate male and female names
+text(x=c(-5, -5), y=c(58, 40), labels=c("Males", "Females"), xpd=TRUE) # Indicate male and female names
 
 # Draw life history timelines
 yloc <- (1:length(ynames))[-(sum(lp$sex=="F")+1)]
@@ -129,9 +131,9 @@ for (i in 1:length(yloc)) {
 # SURVIVAL ANALYSIS FOR LIFE HISTORY DATA (use lh_long)
 #################################################################################################################
 
-####################################
-## Cox proportional hazards model #
-##################################
+###############
+## Data prep #
+#############
 
 # Male data
 mdat <- lh_long[lh_long$sex=="M",]
@@ -140,6 +142,20 @@ mdat <- lh_long[lh_long$sex=="M",]
 drop <- lh_long[lh_long$sex=="F" & lh_long$stop >= 24,"name"]
 fdat <- lh_long[lh_long$sex=="F" & !(lh_long$name %in% drop),]
 
+# Number censored
+nmales <- length(unique(mdat$name))
+nfemales <- length(unique(fdat$name))
+(nmales - sum(mdat$death))/nmales # 93% censored
+(nfemales - sum(fdat$death))/nfemales # 75% censored
+
+# Number with cysts
+sum(fdat$cyst)
+sum(mdat$cyst)
+
+#####################################
+## Cox proportional hazards models #
+###################################
+
 # Cox proportional hazards model (Model 1)
 coxM <- coxph(Surv(start, stop, death) ~ cyst, data=mdat)
 coxF <- coxph(Surv(start, stop, death) ~ cyst, data=fdat)
@@ -147,13 +163,8 @@ summary(coxM) # Cyst not significant (exp(coef) = 2.52, p = 0.23)
 summary(coxF) # Cyst significant (exp(coef) = 10.16, p < 0.001 ***)
 
 # Test proportional hazards assumption (model 1)
-cox.zph(coxM) # Violated!
+cox.zph(coxM) # Check
 cox.zph(coxF) # Violated!
-
-# Residual plots showing the nature of the proportional hazard violation
-layout(matrix(1:2, 1,2))
-plot(cox.zph(coxM))
-plot(cox.zph(coxF))
 
 # Cox proportional hazards with a time transform (Model 2)
 coxM2 <- coxph(Surv(start, stop, death) ~ cyst + tt(cyst), data=mdat, tt=function(x, t, ...) x*t)
@@ -165,42 +176,45 @@ summary(coxF2)
 cox.zph(coxM2) # Check
 cox.zph(coxF2) # Check
 
+################################################
+## Plot scaled Schoenfeld residuals over time #
+##############################################
+
+# Residual plots showing the nature of the proportional hazard violation
+layout(matrix(1:4, 2, 2, byrow=T))
+plot(cox.zph(coxM))
+mtext("A", line=2, cex=1.5, adj=0)
+plot(cox.zph(coxF))
+mtext("B", line=2, cex=1.5, adj=0)
+plot(cox.zph(coxM2), var="cyst")
+mtext("C", line=2, cex=1.5, adj=0)
+plot(cox.zph(coxF2), var="cyst")
+mtext("D", line=2, cex=1.5, adj=0)
+
 ############################
 ## Plot log hazard ratios #
 ##########################
 
-# Hazard function? Why are coefficients so large???
-layout(matrix(1:2,1,2))
-s <- seq(0, 25, length.out=100)
-ym <- function (x) {exp(coef(coxM2)[1] + coef(coxM2)[2]*x)}
-yf <- function (x) {exp(coef(coxF2)[1] + coef(coxF2)[2]*x)}
-ym.l <- function (x) {exp(log(6.42) + log(0.47)*x)}
-ym.u <- function (x) {exp(log(21547.82) + log(0.95)*x)}
-yf.l <- function (x) {exp(log(80.8) + log(0.73)*x)}
-yf.u <- function (x) {exp(log(1466.88) + log(0.87)*x)}
-plot(ym, ylim=c(0,22000), xlim=c(0, 25), xlab="Time", ylab="Hazard ratio", main="Males")
-lines(s, ym.l(s), lty=2)
-lines(s, ym.u(s), lty=2)
-plot(yf, ylim=c(0,1500), xlim=c(0, 25), xlab="Time", ylab="", main="Females")
-lines(s, yf.l(s), lty=2)
-lines(s, yf.u(s), lty=2)
-# log
 layout(matrix(1:2,1,2))
 s <- seq(0, 25, length.out=100)
 ym <- function (x) {(coef(coxM2)[1] + coef(coxM2)[2]*x)}
 yf <- function (x) {(coef(coxF2)[1] + coef(coxF2)[2]*x)}
-ym.l <- function (x) {(log(6.42) + log(0.47)*x)}
-ym.u <- function (x) {(log(21547.82) + log(0.95)*x)}
-yf.l <- function (x) {(log(80.8) + log(0.73)*x)}
-yf.u <- function (x) {(log(1466.88) + log(0.87)*x)}
-plot(ym, ylim=c(-10,10), xlim=c(0, 15), xlab="Time", ylab="Log hazard ratio", main="Males", lwd=2)
-lines(s, ym.l(s), lty=2)
-lines(s, ym.u(s), lty=2)
+ym.l <- function (x) {log(summary(coxM2)$conf.int["cyst","lower .95"]) + log(summary(coxM2)$conf.int["tt(cyst)","lower .95"])*x}
+ym.u <- function (x) {log(summary(coxM2)$conf.int["cyst","upper .95"]) + log(summary(coxM2)$conf.int["tt(cyst)","upper .95"])*x}
+yf.l <- function (x) {log(summary(coxF2)$conf.int["cyst","lower .95"]) + log(summary(coxF2)$conf.int["tt(cyst)","lower .95"])*x}
+yf.u <- function (x) {log(summary(coxF2)$conf.int["cyst","upper .95"]) + log(summary(coxF2)$conf.int["tt(cyst)","upper .95"])*x}
+plot(ym, ylim=c(-10,10), xlim=c(0, 15), xlab="Time", ylab="Log hazard ratio", lwd=2.5)
+lines(s, ym.l(s))
+lines(s, ym.u(s))
+abline(h=coef(coxM)[1], lty=2)
 abline(h=0, col="gray", lty=3)
-plot(yf, ylim=c(-10,10), xlim=c(0, 25), xlab="Time", ylab="", main="Females", lwd=2)
-lines(s, yf.l(s), lty=2)
-lines(s, yf.u(s), lty=2)
+mtext("A", line=2, cex=1.5, adj=0)
+plot(yf, ylim=c(-10,10), xlim=c(0, 24), xlab="Time", ylab="", lwd=2.5)
+lines(s, yf.l(s))
+lines(s, yf.u(s))
 abline(h=0, col="gray", lty=3)
+abline(h=coef(coxF)[1], lty=2)
+mtext("B", line=2, cex=1.5, adj=0)
 
 #################################################################################################################
 # END
