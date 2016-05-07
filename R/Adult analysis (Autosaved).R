@@ -4,7 +4,7 @@
 
 # Load packages
 library(Deducer) # For G-test
-library(survival) # For Cox models
+library(survival) # For survival models
 
 # Read data into R
 lh_wide <- read.csv("~/Desktop/GitHub/Gelada_parasites/Data/lh_wide.csv", header=TRUE, stringsAsFactors=FALSE)
