@@ -79,6 +79,9 @@ abline(v=median(cyst.inf)/365.25, col="red")
 hist(ncyst.inf/365.25, main="Distribution of infant lives (no cyst)", xlab="Life in years")
 abline(v=median(ncyst.inf)/365.25, col="red")
 
+# Write file
+write.csv(infant.wide, file="~/Desktop/GitHub/Gelada_parasites/Data/inf_wide.csv", row.names=FALSE)
+
 # Plot KM survival curves
 quartz()
 plot(survfit(Surv(start, stop/365.25, death) ~ cyst, data=infant.wide))
@@ -124,6 +127,9 @@ for (i in 1:nrow(data)) {
 	new <- data.frame(name=name, sex=sex, start=start, stop=stop, cyst=cyst, death=death, mom=mom, takeover=takeover)
 	infant.long <- rbind(infant.long, new)
 }
+
+# Write file
+write.csv(infant.long, file="~/Desktop/GitHub/Gelada_parasites/Data/inf_long.csv", row.names=FALSE)
 
 # Regular Cox model 
 coxI0 <- coxph(Surv(start, stop, death) ~ cyst, data=infant.long)

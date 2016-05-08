@@ -86,30 +86,30 @@ sum((test3$end - test3$start)<0, na.rm=T)	# Check
 # Longevity data, wide format (cyst is not time varying)
 longevity.wide <- ddply(data, .(NAME), function(x) {
 	if ("Cyst" %in% x$EVENT) {
-		cyst <- x[x$EVENT=="Cyst","DATE"]
-		} else {cyst <- as.POSIXct(NA)}
+		cyst <- as.numeric(difftime(x[x$EVENT=="Cyst","DATE"], x[x$EVENT=="DOB","DATE"], units="days"))/365.25
+		} else {cyst <- NA}
 	if ("DOD" %in% x$EVENT) {
-		dod <- x[x$EVENT=="DOD","DATE"]
-		} else {dod <- as.POSIXct(NA)}
-	if ("DIS" %in% x$EVENT) { 
-		dis <- 1
-	} else {dis <- 0}
+		dod <- as.numeric(difftime(x[x$EVENT=="DOD","DATE"], x[x$EVENT=="DOB","DATE"], units="days"))/365.25
+		} else {dod <- NA}	
 	data.frame(
 	sex <- x$SEX[1],
-	dob <- x[x$EVENT=="DOB","DATE"],
-	start <- x[x$EVENT=="START","DATE"],
+	dob <- 0,
+	start <- as.numeric(difftime(x[x$EVENT=="START","DATE"], x[x$EVENT=="DOB","DATE"], units="days"))/365.25,
 	cyst <- cyst,
 	dod <- dod,
-	end <- x[x$EVENT=="END","DATE"],
+	stop <- as.numeric(difftime(x[x$EVENT=="END","DATE"], x[x$EVENT=="DOB","DATE"], units="days")/365.25),
 	mom <- x$MOM[1],
-	dis <- dis
+	dis <- ifelse("DIS" %in% x$EVENT, 1, 0)
 	)
 })
-names(longevity.wide) <- c("name", "sex", "dob", "start", "cyst", "dod", "end", "mom", "dis")
-longevity.wide$sex <- as.character(longevity.wide$sex)
+names(longevity.wide) <- c("name", "sex", "dob", "start", "cyst", "dod", "stop", "mom", "dis")
 
 # Check histogram of longevity
-hist(c(longevity.wide$dod - longevity.wide$dob)/60/60/24/365, main="Longevity in years", xlab="Longevity", breaks=44, col="gray")
+hist(longevity.wide$dod, main="Longevity in years", xlab="Longevity", col="gray")
+
+# Left truncate at age 4
+longevity.wide <- longevity.wide[longevity.wide$stop > 4,] # Drop those that didn't make it to 4
+longevity.wide$start[longevity.wide$start < 4] <- 4 # Set pre-4 start dates to 4
 
 # Write file
 write.csv(longevity.wide, file="~/Desktop/GitHub/Gelada_parasites/Data/lh_wide.csv", row.names=FALSE)
@@ -119,18 +119,18 @@ write.csv(longevity.wide, file="~/Desktop/GitHub/Gelada_parasites/Data/lh_wide.c
 #################################################################################################################
 
 # Longevity data, long format
-names <- unique(data$NAME)
+names <- unique(longevity.wide$name)
 longevity.long <- data.frame()
 for (i in 1:length(names)) {
 	x <- data[data$NAME==names[i],]
-	start <- difftime(x[x$EVENT=="START","DATE"], x[x$EVENT=="DOB","DATE"], units="days")
-	stop <- difftime(x[x$EVENT=="END","DATE"], x[x$EVENT=="DOB","DATE"], units="days")
+	start <- as.numeric(difftime(x[x$EVENT=="START","DATE"], x[x$EVENT=="DOB","DATE"], units="days")/365.25)
+	stop <- as.numeric(difftime(x[x$EVENT=="END","DATE"], x[x$EVENT=="DOB","DATE"], units="days")/365.25)
 	if ("Cyst" %in% x$EVENT) {
-		cystdate <- difftime(x[x$EVENT=="Cyst","DATE"], x[x$EVENT=="DOB","DATE"], units="days")
+		cystdate <- as.numeric(difftime(x[x$EVENT=="Cyst","DATE"], x[x$EVENT=="DOB","DATE"], units="days")/365.25)
 		if (cystdate > start) {
 			start <- c(start, cystdate)
 			if ("Cyst End" %in% x$EVENT) {
-				cystenddate <- difftime(x[x$EVENT=="Cyst End","DATE"], x[x$EVENT=="DOB","DATE"], units="days")
+				cystenddate <- as.numeric(difftime(x[x$EVENT=="Cyst End","DATE"], x[x$EVENT=="DOB","DATE"], units="days")/365.25)
 				start <- c(start, cystenddate)
 				cyst <- c(0, 1, 0)
 				stop <- c(cystdate, cystenddate, stop)
@@ -154,13 +154,15 @@ for (i in 1:length(names)) {
 	longevity.long <- rbind(longevity.long, new)
 }
 
-# Translate days into years
-longevity.long$start <- c(longevity.long$start/365.25)
-longevity.long$stop <- c(longevity.long$stop/365.25)
+# Left truncate at age 4
+longevity.long$start[longevity.long$start < 4] <- 4 # Set pre-4 start dates to 4
+
+# Right truncate at age 24
+longevity.long$death[longevity.long$stop > 24] <- 0
+longevity.long$stop[longevity.long$stop > 24] <- 24
 
 # Check that stop > start and remove problematic case
-drop3 <- longevity.long[which(longevity.long $stop <= longevity.long $start),"name"] # Tripod is recorded with cyst at the moment of death, don't trust this
-longevity.long <- longevity.long[!(longevity.long$name %in% drop3),]
+longevity.long <- longevity.long[-which(longevity.long$stop <= longevity.long$start),] 
 
 # Write file
 write.csv(longevity.long, file="~/Desktop/GitHub/Gelada_parasites/Data/lh_long.csv", row.names=FALSE)
