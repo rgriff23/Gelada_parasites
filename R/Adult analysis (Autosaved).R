@@ -26,7 +26,7 @@ nrow(lh_wide[lh_wide$sex=="F",]) # 217 females
 # Prevalence of adults, males, and females with cysts
 tab0 <- table(lh_wide$sex, !is.na(lh_wide$cyst))
 sum(tab0[,2])/sum(tab0)	# Overall period prevalence = 0.14
-sum(tab0["M",2])/sum(tab0["M",])	# Male period prevalence = 0.1
+sum(tab0["M",2])/sum(tab0["M",])	# Male period prevalence = 0.09
 sum(tab0["F",2])/sum(tab0["F",])	# Female period prevalence = 0.18
 
 # G-test for difference between Guassa and SMNP prevalences
@@ -62,7 +62,7 @@ tab3[2,]/colSums(tab3) # 21.3% without cysts die; 71.8% with cysts die
 
 # G-test for association between cysts and deaths over study period
 likelihood.test(tab1) # Highly significant across combined sexes (p < 0.001)
-likelihood.test(tab2) # Approaching significance in males (p = 0.1)
+likelihood.test(tab2) # Approaching significance in males (p = 0.08)
 likelihood.test(tab3) # Highly significant in females  (p < 0.001)
 
 ################################################
@@ -72,7 +72,7 @@ likelihood.test(tab3) # Highly significant in females  (p < 0.001)
 # Barplots for mortality among males/females with/without cysts
 quartz()
 layout(matrix(1:2, 1, 2))
-bplotF <- barplot(rev(tab2[2,]/colSums(tab2)), col=c("dimgray", "lightgray"), ylim=c(0,1), xlab="Males", names.arg=c("Cyst (3/12)", "No cyst (10/122)"), ylab="% adults who died during study")
+bplotF <- barplot(rev(tab2[2,]/colSums(tab2)), col=c("dimgray", "lightgray"), ylim=c(0,1), xlab="Males", names.arg=c("Cyst (3/11)", "No cyst (10/123)"), ylab="% adults who died during study")
 errs.c2 <- prop.test(tab2[2,2], colSums(tab2)[2])
 errs.n2 <- prop.test(tab2[2,1], colSums(tab2)[1])
 arrows(x0=c(bplotF), y0=c(errs.c2$conf.int[1], errs.n2$conf.int[1]), x1=c(bplotF), y1=c(errs.c2$conf.int[2], errs.n2$conf.int[2]), length=0.07, angle=90, code=3)
@@ -90,7 +90,6 @@ mtext("B", line=2, cex=1.5, adj=0)
 # Subset to individuals that ever had cysts
 lp <- lh_wide[!is.na(lh_wide$cyst),]
 lp <- lp[-which(lp$name=="Delia"),] # Only had cyst for 1 year, questionable cyst/recovery situation
-lp <- lp[-which(lp$name=="Spam"),]  # Cyst was noted after Spam stopped being tracked by the study
 nrow(lp) # 56 individuals
 
 # Sort first by sex and then by length of observation time
@@ -134,7 +133,7 @@ nfemales <- length(unique(fdat$name))
 
 # Number with cysts
 sum(fdat$cyst) # 38
-sum(mdat$cyst) # 17
+sum(mdat$cyst) # 16
 
 ################
 ## Cox models #

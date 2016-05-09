@@ -85,8 +85,10 @@ sum((test3$end - test3$start)<0, na.rm=T)	# Check
 
 # Longevity data, wide format (cyst is not time varying)
 longevity.wide <- ddply(data, .(NAME), function(x) {
+	stop <- as.numeric(difftime(x[x$EVENT=="END","DATE"], x[x$EVENT=="DOB","DATE"], units="days")/365.25)
 	if ("Cyst" %in% x$EVENT) {
 		cyst <- as.numeric(difftime(x[x$EVENT=="Cyst","DATE"], x[x$EVENT=="DOB","DATE"], units="days"))/365.25
+		if (cyst > stop) {cyst <- NA}
 		} else {cyst <- NA}
 	if ("DOD" %in% x$EVENT) {
 		dod <- as.numeric(difftime(x[x$EVENT=="DOD","DATE"], x[x$EVENT=="DOB","DATE"], units="days"))/365.25
@@ -97,7 +99,7 @@ longevity.wide <- ddply(data, .(NAME), function(x) {
 	start <- as.numeric(difftime(x[x$EVENT=="START","DATE"], x[x$EVENT=="DOB","DATE"], units="days"))/365.25,
 	cyst <- cyst,
 	dod <- dod,
-	stop <- as.numeric(difftime(x[x$EVENT=="END","DATE"], x[x$EVENT=="DOB","DATE"], units="days")/365.25),
+	stop <- stop,
 	mom <- x$MOM[1],
 	dis <- ifelse("DIS" %in% x$EVENT, 1, 0)
 	)
