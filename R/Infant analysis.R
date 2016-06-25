@@ -45,11 +45,16 @@ coxI0 <- coxph(Surv(start, stop, death) ~ cyst, data=inf_long)
 summary(coxI0) # p < 0.001, HR = 2.49
 cox.zph(coxI0) # not significant
 
-# Regular Cox model 
+# Regular Cox model excluding mom-infant deaths
 momalive <- infant.wide[inf_wide$momdied==0,"name"]
 coxI0b <- coxph(Surv(start, stop, death) ~ cyst, data=inf_long[inf_long$name%in%momalive,])
 summary(coxI0b) # p < 0.001, HR = 2.49
 cox.zph(coxI0b) # not significant
+
+# Regular Cox model with clustering by mom ID
+coxI0c <- coxph(Surv(start, stop, death) ~ frailty(mom) + cyst, data=inf_long)
+summary(coxI0c) # p < 0.001, HR = 2.49
+cox.zph(coxI0c) # not significant
 
 # Regular Cox model controlling for takeover
 coxI1 <- coxph(Surv(start, stop, death) ~ cyst + takeover, data= inf_long)

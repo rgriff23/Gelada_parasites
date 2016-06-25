@@ -7,90 +7,19 @@ library(Deducer) # For G-test
 library(survival) # For survival models
 
 # Read data into R
-lh_wide <- read.csv("~/Desktop/GitHub/Gelada_parasites/Data/lh_wide.csv", header=TRUE, stringsAsFactors=FALSE)
-lh_long <- read.csv("~/Desktop/GitHub/Gelada_parasites/Data/lh_long.csv", header=TRUE, stringsAsFactors=FALSE)
+adult_wide <- read.csv("~/Desktop/GitHub/Gelada_parasites/Data/adult_wide.csv", header=TRUE, stringsAsFactors=FALSE)
+adult_long <- read.csv("~/Desktop/GitHub/Gelada_parasites/Data/adult_long.csv", header=TRUE, stringsAsFactors=FALSE)
 
-#################################################################################################################
-# G-TESTS FOR PREVALENCE AND MORTALITY (use lh_wide)
-#################################################################################################################
-
-#################
-## Prevalence  #
-###############
-
-# Number of adults, males, and females
-nrow(lh_wide) # 387
-nrow(lh_wide[lh_wide$sex=="M",]) # 170 males
-nrow(lh_wide[lh_wide$sex=="F",]) # 217 females
-
-# Prevalence of adults, males, and females with cysts
-tab0 <- table(lh_wide$sex, !is.na(lh_wide$cyst))
-sum(tab0[,2])/sum(tab0)	# Overall period prevalence = 0.14
-sum(tab0["M",2])/sum(tab0["M",])	# Male period prevalence = 0.09
-sum(tab0["F",2])/sum(tab0["F",])	# Female period prevalence = 0.18
-
-# G-test for difference between Guassa and SMNP prevalences
-likelihood.test(rbind(tab0["F",], c(68, 31))) # G = 6.74, p < 0.001
-likelihood.test(rbind(tab0["M",], c(49, 19))) # G = 11.15, p < 0.001)
-
-# G-test for independence between cysts and sex
-likelihood.test(tab0) # G = 5.05, p < 0.05
-
-###############
-## Mortality #
-#############
-
-# Exclude individuals who disappeared 
-sum(!is.na(lh_wide$dod[lh_wide$sex=="M"])) # 13 males died
-sum(is.na(lh_wide$dod[lh_wide$sex=="M"])) # 157 males did not die
-sum(lh_wide$sex=="F" & lh_wide$dis==1)/sum(lh_wide$sex=="F") # 0 of 216 females disappeared
-sum(lh_wide$sex=="M" & lh_wide$dis==1)/sum(lh_wide$sex=="M") # 36 of 170 (21.2% of males disappeared)
-lh_wide2 <- lh_wide[!lh_wide$dis==1,-which(names(lh_wide)=="dis")]
-
-# New number of adults, males, and females 
-nrow(lh_wide2) # 351 individuals
-sum(lh_wide2$sex=="M") # 134 males
-sum(lh_wide2$sex=="F") # 217 females
-
-# Number/proportion of adults dying with/without cysts over study period
-tab1 <- table(!is.na(lh_wide2$dod), !is.na(lh_wide2$cyst))
-tab1[2,]/colSums(tab1)	# 15.7% without cysts die; 60.8% with cysts die
-tab2 <- table(!is.na(lh_wide2$dod[lh_wide2$sex=="M"]), !is.na(lh_wide2$cyst[lh_wide2$sex=="M"]))
-tab2[2,]/colSums(tab2)	# 8.2% without cysts die; 25% with cysts die
-tab3 <- table(!is.na(lh_wide2$dod[lh_wide2$sex=="F"]), !is.na(lh_wide2$cyst[lh_wide2$sex=="F"]))
-tab3[2,]/colSums(tab3) # 21.3% without cysts die; 71.8% with cysts die
-
-# G-test for association between cysts and deaths over study period
-likelihood.test(tab1) # Highly significant across combined sexes (p < 0.001)
-likelihood.test(tab2) # Approaching significance in males (p = 0.08)
-likelihood.test(tab3) # Highly significant in females  (p < 0.001)
-
-################################################
-## Barplot comparing prevalence and mortality #
-##############################################
-
-# Barplots for mortality among males/females with/without cysts
-quartz()
-layout(matrix(1:2, 1, 2))
-bplotF <- barplot(rev(tab2[2,]/colSums(tab2)), col=c("dimgray", "lightgray"), ylim=c(0,1), xlab="Males", names.arg=c("Cyst (3/11)", "No cyst (10/123)"), ylab="% adults who died during study")
-errs.c2 <- prop.test(tab2[2,2], colSums(tab2)[2])
-errs.n2 <- prop.test(tab2[2,1], colSums(tab2)[1])
-arrows(x0=c(bplotF), y0=c(errs.c2$conf.int[1], errs.n2$conf.int[1]), x1=c(bplotF), y1=c(errs.c2$conf.int[2], errs.n2$conf.int[2]), length=0.07, angle=90, code=3)
-mtext("A", line=2, cex=1.5, adj=0)
-bplotM <- barplot(rev(tab3[2,]/colSums(tab3)), col=c("dimgray", "lightgray"), ylim=c(0,1), xlab="Females", ylab="", names.arg=c("Cyst (28/39)", "No cyst (38/178)"))
-errs.c <- prop.test(tab3[2,2], colSums(tab3)[2])
-errs.n <- prop.test(tab3[2,1], colSums(tab3)[1])
-arrows(x0=c(bplotM), y0=c(errs.c$conf.int[1], errs.n$conf.int[1]), x1=c(bplotM), y1=c(errs.c$conf.int[2], errs.n$conf.int[2]), length=0.07, angle=90, code=3)
-mtext("B", line=2, cex=1.5, adj=0)
-
-#################################################
-## Line plot showing individual life histories #
-###############################################
+###############################################################
+## Line plot showing individual life histories in adult_wide #
+#############################################################
 
 # Subset to individuals that ever had cysts
-lp <- lh_wide[!is.na(lh_wide$cyst),]
-lp <- lp[-which(lp$name=="Delia"),] # Only had cyst for 1 year, questionable cyst/recovery situation
-nrow(lp) # 56 individuals
+lp <- adult_wide[!is.na(adult_wide$cyst),]
+lp <- lp[-which(lp$name=="Delia"),] # Sole individual who developed a cyst and recovered
+nrow(lp) # 54 individuals
+nrow(lp[lp$sex=="M",]) # 16 males
+nrow(lp[lp$sex=="F",]) # 38 females
 
 # Sort first by sex and then by length of observation time
 lp <- lp[order(factor(lp$sex, levels=c("F", "M")), lp$stop, decreasing=FALSE),]
@@ -99,7 +28,7 @@ lp <- lp[order(factor(lp$sex, levels=c("F", "M")), lp$stop, decreasing=FALSE),]
 quartz()
 par(mar=c(5, 6, 4, 2))
 plot(0:(nrow(lp)+1) ~ seq(0, 25, length.out=length(0:(nrow(lp)+1))), data=lp, type="n", yaxt="n", ylab="", xlab="Time (years)")
-ynames <- c(lp$name[lp$sex=="F"], "", lp$name[lp$sex=="M"])
+ynames <- c(toupper(substr(lp$name[lp$sex=="F"], 1, 3)), "", toupper(substr(lp$name[lp$sex=="M"], 1, 3)))
 axis(side=2, at=1:length(ynames), labels=ynames, las=2, cex.axis=0.5, tcl=0, mgp=c(3, 0.3, 0)) # y axis
 text(x=c(-6, -6), y=c(57, 39), labels=c("Males", "Females"), xpd=TRUE) # Indicate male and female names
 
@@ -114,7 +43,98 @@ for (i in 1:length(yloc)) {
 }
 
 #################################################################################################################
-# SURVIVAL ANALYSIS FOR LIFE HISTORY DATA (use lh_long)
+# G-TESTS FOR PREVALENCE AND MORTALITY (use adult_wide)
+#################################################################################################################
+
+# Number of adults, males, and females
+nrow(adult_wide) # 387
+nrow(adult_wide[adult_wide$sex=="M",]) # 170 males
+nrow(adult_wide[adult_wide$sex=="F",]) # 217 females
+
+# Limit to last 6.5 years of study
+adult_wide <- adult_wide[adult_wide$drop == 0,]
+
+# New number of adults, males, and females (dropped 36: 9 males and 27 females)
+nrow(adult_wide) # 351
+nrow(adult_wide[adult_wide$sex=="M",]) # 161 males
+nrow(adult_wide[adult_wide$sex=="F",]) # 190 females
+
+#################
+## Prevalence  #
+###############
+
+# Prevalence of adults, males, and females with cysts
+tab0 <- table(adult_wide$sex, !is.na(adult_wide$cyst))
+sum(tab0[,2])/sum(tab0)	# Overall period prevalence = 0.13
+sum(tab0["M",2])/sum(tab0["M",])	# Male period prevalence = 0.09
+sum(tab0["F",2])/sum(tab0["F",])	# Female period prevalence = 0.16
+
+# G-test for independence between Guassa vs SMNP male prevalence
+likelihood.test(rbind(tab0["M",], c(49, 19))) # G = 13.16, p < 0.001***
+
+# G-test for independence between Guassa vs SMNP female prevalence
+likelihood.test(rbind(tab0["F",], c(68, 31))) # G = 8.38, p < 0.01**
+
+# G-test for independence between Guassa and SMNP adult versus immature prevalences
+# (note these numbers were compiled from a data sheet that is not included here)
+likelihood.test(rbind(c(174, 7),c(405, 2))) # G = 8.58, p < 0.01**
+
+# G-test for independence between cysts and sex at SMNP
+likelihood.test(tab0) # G = 4.66, p < 0.05*
+
+###############
+## Mortality #
+#############
+
+# Drop individuals who disappeared during the study
+sum(!is.na(adult_wide$dod[adult_wide$sex=="M"])) # 12 males died
+sum(is.na(adult_wide$dod[adult_wide$sex=="M"])) # 149 males did not die
+sum(adult_wide$sex=="F" & adult_wide$dis==1)/sum(adult_wide$sex=="F") # 0 of 190 females disappeared
+sum(adult_wide$sex=="M" & adult_wide$dis==1)/sum(adult_wide$sex=="M") # 31 of 161 (21.2% of males disappeared)
+adult_wide2 <- adult_wide[!adult_wide$dis==1,-which(names(adult_wide)=="dis")]
+
+# New number of adults, males, and females 
+nrow(adult_wide2) # 320 individuals
+sum(adult_wide2$sex=="M") # 130 males
+sum(adult_wide2$sex=="F") # 190 females
+
+# Number/proportion of adults dying with/without cysts over study period
+tab1 <- table(!is.na(adult_wide2$dod), !is.na(adult_wide2$cyst))
+tab1[2,]/colSums(tab1)	# 15% without cysts die; 59% with cysts die
+tab2 <- table(!is.na(adult_wide2$dod[adult_wide2$sex=="M"]), !is.na(adult_wide2$cyst[adult_wide2$sex=="M"]))
+tab2[2,]/colSums(tab2)	# 8% without cysts die; 30% with cysts die
+tab3 <- table(!is.na(adult_wide2$dod[adult_wide2$sex=="F"]), !is.na(adult_wide2$cyst[adult_wide2$sex=="F"]))
+tab3[2,]/colSums(tab3) # 20% without cysts die; 68% with cysts die
+
+# G-test for association between cysts and deaths over study period
+likelihood.test(tab1) # Adults: G = 34.47, p < 0.001***
+likelihood.test(tab2) # Males: G = 3.89, p < 0.05*
+likelihood.test(tab3) # Females: G = 26.28, p < 0.001***
+
+# G-test for difference in cyst-associated mortality between SMNP and Guassa
+likelihood.test(rbind(c(3, 10), c(9, 12))) # Males: G = 1.42, p > 0.05
+likelihood.test(rbind(c(21, 31), c(9, 22))) # Females: G = 1.1, p > 0.05
+
+#################################
+## Barplot comparing mortality #
+###############################
+
+# Barplots for mortality among males/females with/without cysts
+quartz()
+layout(matrix(1:2, 1, 2))
+bplotF <- barplot(rev(tab2[2,]/colSums(tab2)), col=c("dimgray", "lightgray"), ylim=c(0,1), xlab="Males", names.arg=c("Cyst (3/10)", "No cyst (9/120)"), ylab="% adults who died during study")
+errs.c2 <- prop.test(tab2[2,2], colSums(tab2)[2])
+errs.n2 <- prop.test(tab2[2,1], colSums(tab2)[1])
+arrows(x0=c(bplotF), y0=c(errs.c2$conf.int[1], errs.n2$conf.int[1]), x1=c(bplotF), y1=c(errs.c2$conf.int[2], errs.n2$conf.int[2]), length=0.07, angle=90, code=3)
+mtext("A", line=2, cex=1.5, adj=0)
+bplotM <- barplot(rev(tab3[2,]/colSums(tab3)), col=c("dimgray", "lightgray"), ylim=c(0,1), xlab="Females", ylab="", names.arg=c("Cyst (21/31)", "No cyst (32/159)"))
+errs.c <- prop.test(tab3[2,2], colSums(tab3)[2])
+errs.n <- prop.test(tab3[2,1], colSums(tab3)[1])
+arrows(x0=c(bplotM), y0=c(errs.c$conf.int[1], errs.n$conf.int[1]), x1=c(bplotM), y1=c(errs.c$conf.int[2], errs.n$conf.int[2]), length=0.07, angle=90, code=3)
+mtext("B", line=2, cex=1.5, adj=0)
+
+#################################################################################################################
+# SURVIVAL ANALYSIS FOR LIFE HISTORY DATA (use adult_long)
 #################################################################################################################
 
 ###############
@@ -122,8 +142,8 @@ for (i in 1:length(yloc)) {
 #############
 
 # Male data
-mdat <- lh_long[lh_long$sex=="M",]
-fdat <- lh_long[lh_long$sex=="F",]
+mdat <- adult_long[adult_long$sex=="M",]
+fdat <- adult_long[adult_long$sex=="F",]
 
 # Number censored
 nmales <- length(unique(mdat$name))
@@ -173,9 +193,9 @@ summary(coxF2) # Cyst and time transform significant, p < 0.001 ***
 
 # Residual plots showing the nature of the proportional hazard violation
 layout(matrix(1:2, 1, 2, byrow=T))
-plot(cox.zph(coxM, transform="identity"))
+plot(cox.zph(coxM, transform="identity"), xlab="Time (years)", main="Males")
 mtext("A", line=2, cex=1.5, adj=0)
-plot(cox.zph(coxF, transform="identity"))
+plot(cox.zph(coxF, transform="identity"), xlab="Time (years)", main="Females")
 mtext("B", line=2, cex=1.5, adj=0)
 
 ############################
@@ -190,13 +210,13 @@ ym.l <- function (x) {log(summary(coxM2)$conf.int["cyst","lower .95"]) + log(sum
 ym.u <- function (x) {log(summary(coxM2)$conf.int["cyst","upper .95"]) + log(summary(coxM2)$conf.int["tt(cyst)","upper .95"])*x}
 yf.l <- function (x) {log(summary(coxF2)$conf.int["cyst","lower .95"]) + log(summary(coxF2)$conf.int["tt(cyst)","lower .95"])*x}
 yf.u <- function (x) {log(summary(coxF2)$conf.int["cyst","upper .95"]) + log(summary(coxF2)$conf.int["tt(cyst)","upper .95"])*x}
-plot(ym, ylim=c(-10,10), xlim=c(4, 15), xlab="Time", ylab="Log hazard ratio", lwd=2.5)
+plot(ym, ylim=c(-10,10), xlim=c(4, 15), ylab="Log hazard ratio", lwd=2.5, xlab="Time (years)", main="Males")
 lines(s, ym.l(s))
 lines(s, ym.u(s))
 abline(h=coef(coxM)[1], lty=2)
 abline(h=0, col="gray", lty=3)
 mtext("A", line=2, cex=1.5, adj=0)
-plot(yf, ylim=c(-10,10), xlim=c(4, 24), xlab="Time", ylab="", lwd=2.5)
+plot(yf, ylim=c(-10,10), xlim=c(4, 24), ylab="", lwd=2.5, xlab="Time (years)", main="Females")
 lines(s, yf.l(s))
 lines(s, yf.u(s))
 abline(h=0, col="gray", lty=3)
@@ -206,15 +226,3 @@ mtext("B", line=2, cex=1.5, adj=0)
 #################################################################################################################
 # END
 #################################################################################################################
-
-# sum of years
-sum_years <- sum(lh_long[,"stop"] - lh_long[,"start"])
-
-# sum of cyst-years
-sum_cystyears <- sum(lh_long[lh_long$cyst==1,"stop"] - lh_long[lh_long$cyst==1,"start"])
-
-# probability a randomly chosen male has a cyst
-sum_cystyears /sum_years # 0.08
-
-# prop.test
-binom.test(x=2, n=69, p=0.08) # p < 0.05

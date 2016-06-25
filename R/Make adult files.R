@@ -31,7 +31,7 @@ test <- ddply(data, .(NAME), function(x) {
 	})
 names(test) <- c("NAME", "DOB", "START","END")
 drop1 <- test[test[,2]!=1 | test[,3]!=1 | test[,4]!=1,"NAME"]	 # drop
-drop1
+drop1 # Patsy and Princess
 data <- data[!(data$NAME %in% drop1),]
 
 # Check DOB and START and END are not NA
@@ -95,16 +95,16 @@ longevity.wide <- ddply(data, .(NAME), function(x) {
 		} else {dod <- NA}	
 	data.frame(
 	sex <- x$SEX[1],
-	dob <- 0,
 	start <- as.numeric(difftime(x[x$EVENT=="START","DATE"], x[x$EVENT=="DOB","DATE"], units="days"))/365.25,
 	cyst <- cyst,
 	dod <- dod,
 	stop <- stop,
 	mom <- x$MOM[1],
-	dis <- ifelse("DIS" %in% x$EVENT, 1, 0)
+	dis <- ifelse("DIS" %in% x$EVENT, 1, 0),
+	drop <- ifelse(x[x$EVENT=="END","DATE"] < as.POSIXct("07/01/08", format="%m/%d/%y"), 1, 0)
 	)
 })
-names(longevity.wide) <- c("name", "sex", "dob", "start", "cyst", "dod", "stop", "mom", "dis")
+names(longevity.wide) <- c("name", "sex", "start", "cyst", "dod", "stop", "mom", "dis", "drop")
 
 # Check histogram of longevity
 hist(longevity.wide$dod, main="Longevity in years", xlab="Longevity", col="gray")
@@ -114,7 +114,7 @@ longevity.wide <- longevity.wide[longevity.wide$stop > 4,] # Drop those that did
 longevity.wide$start[longevity.wide$start < 4] <- 4 # Set pre-4 start dates to 4
 
 # Write file
-write.csv(longevity.wide, file="~/Desktop/GitHub/Gelada_parasites/Data/lh_wide.csv", row.names=FALSE)
+write.csv(longevity.wide, file="~/Desktop/GitHub/Gelada_parasites/Data/adult_wide.csv", row.names=FALSE)
 
 #################################################################################################################
 # CREATE LONG-FORM DATA FOR SURVIVAL ANALYSIS
@@ -167,7 +167,7 @@ longevity.long$stop[longevity.long$stop > 24] <- 24
 longevity.long <- longevity.long[-which(longevity.long$stop <= longevity.long$start),] 
 
 # Write file
-write.csv(longevity.long, file="~/Desktop/GitHub/Gelada_parasites/Data/lh_long.csv", row.names=FALSE)
+write.csv(longevity.long, file="~/Desktop/GitHub/Gelada_parasites/Data/adult_long.csv", row.names=FALSE)
 
 #################################################################################################################
 # END
