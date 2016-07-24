@@ -66,8 +66,8 @@ nrow(adult_wide[adult_wide$sex=="F",]) # 190 females
 # Prevalence of adults, males, and females with cysts
 tab0 <- table(adult_wide$sex, !is.na(adult_wide$cyst))
 sum(tab0[,2])/sum(tab0)	# Overall period prevalence = 0.13
-sum(tab0["M",2])/sum(tab0["M",])	# Male period prevalence = 0.09
-sum(tab0["F",2])/sum(tab0["F",])	# Female period prevalence = 0.16
+sum(tab0["M",2])/sum(tab0["M",]) 	# Male period prevalence = 0.09
+sum(tab0["F",2])/sum(tab0["F",]) 	# Female period prevalence = 0.16
 
 # G-test for independence between Guassa vs SMNP male prevalence
 likelihood.test(rbind(tab0["M",], c(49, 19))) # G = 13.16, p < 0.001***
@@ -81,6 +81,14 @@ likelihood.test(rbind(c(174, 7),c(405, 2))) # G = 8.58, p < 0.01**
 
 # G-test for independence between cysts and sex at SMNP
 likelihood.test(tab0) # G = 4.66, p < 0.05*
+
+# G-test for independence between cysts and age at SMNP
+likelihood.test(rbind(c(306, 45),c(405, 2))) # G = 58.3, p < 0.001***
+
+# Test for a unit-level effect
+unit_test <- adult_wide[! adult_wide$unit %in% c("T?", "unknown"),]
+length(unique(unit_test$unit)) # 27 units
+likelihood.test(unit_test$unit, is.na(unit_test$cyst)) # G = 24.91, p > 0.05
 
 ###############
 ## Mortality #
@@ -210,13 +218,13 @@ ym.l <- function (x) {log(summary(coxM2)$conf.int["cyst","lower .95"]) + log(sum
 ym.u <- function (x) {log(summary(coxM2)$conf.int["cyst","upper .95"]) + log(summary(coxM2)$conf.int["tt(cyst)","upper .95"])*x}
 yf.l <- function (x) {log(summary(coxF2)$conf.int["cyst","lower .95"]) + log(summary(coxF2)$conf.int["tt(cyst)","lower .95"])*x}
 yf.u <- function (x) {log(summary(coxF2)$conf.int["cyst","upper .95"]) + log(summary(coxF2)$conf.int["tt(cyst)","upper .95"])*x}
-plot(ym, ylim=c(-10,10), xlim=c(4, 15), xlab="Time", ylab="Log hazard ratio", lwd=2.5, xlab="Time (years)", main="Males")
+plot(ym, ylim=c(-10,10), xlim=c(4, 15), ylab="Log hazard ratio", lwd=2.5, xlab="Time (years)", main="Males")
 lines(s, ym.l(s))
 lines(s, ym.u(s))
 abline(h=coef(coxM)[1], lty=2)
 abline(h=0, col="gray", lty=3)
 mtext("A", line=2, cex=1.5, adj=0)
-plot(yf, ylim=c(-10,10), xlim=c(4, 24), xlab="Time", ylab="", lwd=2.5, xlab="Time (years)", main="Males")
+plot(yf, ylim=c(-10,10), xlim=c(4, 24), ylab="", lwd=2.5, xlab="Time (years)", main="Females")
 lines(s, yf.l(s))
 lines(s, yf.u(s))
 abline(h=0, col="gray", lty=3)

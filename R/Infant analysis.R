@@ -9,14 +9,22 @@ library(survival)
 inf_wide <- read.csv("~/Desktop/GitHub/Gelada_parasites/Data/inf_wide.csv", header=TRUE, stringsAsFactors=FALSE)
 inf_long <- read.csv("~/Desktop/GitHub/Gelada_parasites/Data/inf_long.csv", header=TRUE, stringsAsFactors=FALSE)
 
-# Summary stats
+# Summary stats for full data
 nrow(inf_wide) # 375 infants
-table(inf_wide $sex) # 203 females, 172 males
-table(inf_wide $cyst) # 339 to non-cyst moms, 36 to cyst moms
-sum(inf_long$takeover) # 107 experienced takeovers, 268 did not
-table(inf_wide$death) # 288 were censored, 87 died
-length(unique(inf_wide$mom)) # 170 unique mothers
+nrow(inf_wide[inf_wide$cyst==0,]) # 339 infants born to
+length(unique(inf_wide[inf_wide$cyst==0,"mom"])) # 154 non-cyst mothers
+nrow(inf_wide[inf_wide$cyst==1,]) # 36 infants born to 
+length(unique(inf_wide[inf_wide$cyst==1,"mom"])) # 27 cyst mothers
 median(table(inf_wide$mom)) # median number of births per mother is 2
+max(table(inf_wide$mom)) # maximum number of births per mother is 7
+
+# Summary stats for data excluding infants who died with moms
+inf_wide2 <- inf_wide[inf_wide$momdied==0,]
+nrow(inf_wide2[inf_wide2$cyst==0,]) # 325 infants born to
+length(unique(inf_wide2[inf_wide2$cyst==0,"mom"])) # 149 non-cyst mothers
+nrow(inf_wide2[inf_wide2$cyst==1,]) # 149 infants born to 
+length(unique(inf_wide2[inf_wide2$cyst==1,"mom"])) # 17 cyst mothers
+
 
 #################################################################################################################
 # KAPLAN-MEIER ANALYSIS (use inf_wide)
@@ -46,8 +54,9 @@ summary(coxI0) # p < 0.001, HR = 2.49
 cox.zph(coxI0) # not significant
 
 # Regular Cox model excluding mom-infant deaths
-momalive <- infant.wide[inf_wide$momdied==0,"name"]
-coxI0b <- coxph(Surv(start, stop, death) ~ cyst, data=inf_long[inf_long$name%in%momalive,])
+momalive <- inf_wide[inf_wide$momdied==0,"name"]
+inf_long2 <- inf_long[inf_long$name%in%momalive,]
+coxI0b <- coxph(Surv(start, stop, death) ~ cyst, data=inf_long2)
 summary(coxI0b) # p < 0.001, HR = 2.49
 cox.zph(coxI0b) # not significant
 

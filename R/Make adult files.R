@@ -95,6 +95,7 @@ longevity.wide <- ddply(data, .(NAME), function(x) {
 		} else {dod <- NA}	
 	data.frame(
 	sex <- x$SEX[1],
+	unit <- x$UNIT[1],
 	start <- as.numeric(difftime(x[x$EVENT=="START","DATE"], x[x$EVENT=="DOB","DATE"], units="days"))/365.25,
 	cyst <- cyst,
 	dod <- dod,
@@ -104,7 +105,7 @@ longevity.wide <- ddply(data, .(NAME), function(x) {
 	drop <- ifelse(x[x$EVENT=="END","DATE"] < as.POSIXct("07/01/08", format="%m/%d/%y"), 1, 0)
 	)
 })
-names(longevity.wide) <- c("name", "sex", "start", "cyst", "dod", "stop", "mom", "dis", "drop")
+names(longevity.wide) <- c("name", "sex", "unit", "start", "cyst", "dod", "stop", "mom", "dis", "drop")
 
 # Check histogram of longevity
 hist(longevity.wide$dod, main="Longevity in years", xlab="Longevity", col="gray")
