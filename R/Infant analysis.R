@@ -38,8 +38,8 @@ survdiff(Surv(stop, death) ~ cyst, data=infant.wide[inf_wide$momdied==0,]) # Dif
 
 # Plot KM survival curves
 layout(matrix(1:2, 1, 2))
-plot(survfit(Surv(start, stop/365.25, death) ~ cyst, data=inf_wide), xlab="Time (years)", ylab="Proportion alive", conf.int=T, col=c("skyblue", "darkblue"), mark.time=TRUE, lwd=c(1.5, 2))
-legend("bottomleft", legend=c("Non-cyst", "Cyst"), col=c("skyblue", "darkblue"), lwd=2)
+plot(survfit(Surv(start, stop/365.25, death) ~ cyst, data=inf_wide), xlab="Time (years)", ylab="Proportion of infants alive", conf.int=T, col=c("skyblue", "darkblue"), mark.time=TRUE, lwd=c(1.5, 2))
+legend("bottomleft", legend=c("Non-cyst mother", "Cyst mother"), col=c("skyblue", "darkblue"), lwd=2, cex=0.6)
 mtext("A", line=2, cex=1.5, adj=0)
 plot(survfit(Surv(start, stop/365.25, death) ~ cyst, data=inf_wide[inf_wide$momdied==0,]), xlab="Time (years)", conf.int=T, col=c("skyblue", "darkblue"), mark.time=TRUE, lwd=c(1.5, 2))
 mtext("B", line=2, cex=1.5, adj=0)
