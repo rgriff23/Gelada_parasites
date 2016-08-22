@@ -69,6 +69,14 @@ sum(tab0[,2])/sum(tab0)	# Overall period prevalence = 0.13
 sum(tab0["M",2])/sum(tab0["M",]) 	# Male period prevalence = 0.09
 sum(tab0["F",2])/sum(tab0["F",]) 	# Female period prevalence = 0.16
 
+# Prevalences for females subsetted to match ages of males
+drop_old <- adult_wide
+drop_old[adult_wide$stop > max(adult_wide[adult_wide$sex == "M","stop"]),"stop"] <- max(adult_wide[adult_wide$sex == "M","stop"])
+drop_old <- drop_old[-which(drop_old$stop < drop_old$start),]
+tab0b <- table(drop_old $sex, !is.na(drop_old $cyst))
+sum(tab0b["M",2])/sum(tab0b["M",]) 	# Male period prevalence = 0.09
+sum(tab0b["F",2])/sum(tab0b["F",]) 	# Female period prevalence = 0.15
+
 # G-test for independence between Guassa vs SMNP male prevalence
 likelihood.test(rbind(tab0["M",], c(49, 19))) # G = 13.16, p < 0.001***
 
@@ -81,6 +89,7 @@ likelihood.test(rbind(c(174, 7),c(405, 2))) # G = 8.58, p < 0.01**
 
 # G-test for independence between cysts and sex at SMNP
 likelihood.test(tab0) # G = 4.66, p < 0.05*
+likelihood.test(tab0b) # G = 3.47, p = 0.06
 
 # G-test for independence between cysts and age at SMNP
 likelihood.test(rbind(c(306, 45),c(405, 2))) # G = 58.3, p < 0.001***
