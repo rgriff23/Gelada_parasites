@@ -39,7 +39,7 @@ survdiff(Surv(stop, death) ~ cyst, data=infant.wide[inf_wide$momdied==0,]) # Dif
 # Plot KM survival curves
 layout(matrix(1:2, 1, 2))
 plot(survfit(Surv(start, stop/365.25, death) ~ cyst, data=inf_wide), xlab="Time (years)", ylab="Proportion of infants alive", conf.int=T, col=c("skyblue", "darkblue"), mark.time=TRUE, lwd=c(1.5, 2))
-legend("bottomleft", legend=c("Non-cyst mother", "Cyst mother"), col=c("skyblue", "darkblue"), lwd=2, cex=0.6)
+legend("bottomleft", title="Mother status", legend=c("No cyst", "Cyst"), col=c("skyblue", "darkblue"), lwd=2, cex=0.75, text.font=3)
 mtext("A", line=2, cex=1.5, adj=0)
 plot(survfit(Surv(start, stop/365.25, death) ~ cyst, data=inf_wide[inf_wide$momdied==0,]), xlab="Time (years)", conf.int=T, col=c("skyblue", "darkblue"), mark.time=TRUE, lwd=c(1.5, 2))
 mtext("B", line=2, cex=1.5, adj=0)
@@ -57,7 +57,7 @@ cox.zph(coxI0) # not significant
 momalive <- inf_wide[inf_wide$momdied==0,"name"]
 inf_long2 <- inf_long[inf_long$name%in%momalive,]
 coxI0b <- coxph(Surv(start, stop, death) ~ cyst, data=inf_long2)
-summary(coxI0b) # p < 0.001, HR = 2.49
+summary(coxI0b) # p = 0.467, HR = 1.34
 cox.zph(coxI0b) # not significant
 
 # Regular Cox model with clustering by mom ID
