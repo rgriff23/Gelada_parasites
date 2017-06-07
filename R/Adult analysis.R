@@ -1,19 +1,19 @@
-#################################################################################################################
-# PREPARATIONS
-#################################################################################################################
+################
+# PREPARATIONS #
+################
 
 # Load packages
 library(survival) 
 library(plyr)
 
 # Read data into R
-adult <- read.csv("~/Desktop/GitHub/Gelada_parasites/Data/adult.csv", header=TRUE, stringsAsFactors=FALSE)
+adult <- read.csv("https://raw.githubusercontent.com/rgriff23/Gelada_parasites/master/Data/adult.csv", header=TRUE, stringsAsFactors=FALSE)
 
 #################
 # SUMMARY STATS #
 #################
 
-# Format adult data so there is one row per individual
+# Format data so there is one row per individual
 adult1 <- ddply(adult, .(name), function (x) {data.frame(name=x$name[1], sex=x$sex[1], cyst=sum(x$cyst))})
 
 # Number of adults, males, females, and infants
@@ -32,9 +32,9 @@ sum(adult1[,"cyst"])/nrow(adult1) # 13.99%
 sum(adult1[adult1$sex=="M","cyst"])/nrow(adult1[adult1$sex=="M",]) # 9.41%
 sum(adult1[adult1$sex=="F","cyst"])/nrow(adult1[adult1$sex=="F",]) # 17.59%
 
-###########################
-# ADULT SURVIVAL ANALYSIS #
-###########################
+#################
+# COX PH MODELS #
+#################
 
 # Subset data for males and females
 mdat <- adult[adult$sex=="M",]
@@ -78,15 +78,15 @@ ym.l <- function (x) {log(summary(coxM2)$conf.int["cyst","lower .95"]) + log(sum
 ym.u <- function (x) {log(summary(coxM2)$conf.int["cyst","upper .95"]) + log(summary(coxM2)$conf.int["tt(cyst)","upper .95"])*x}
 yf.l <- function (x) {log(summary(coxF2)$conf.int["cyst","lower .95"]) + log(summary(coxF2)$conf.int["tt(cyst)","lower .95"])*x}
 yf.u <- function (x) {log(summary(coxF2)$conf.int["cyst","upper .95"]) + log(summary(coxF2)$conf.int["tt(cyst)","upper .95"])*x}
-plot(ym, ylim=c(-10,10), xlim=c(4, 15), ylab="Log hazard ratio", lwd=2.5, xlab="Age (years)", main="Males")
-lines(s, ym.l(s))
-lines(s, ym.u(s))
+plot(ym, ylim=c(-10,10), xlim=c(4, 15), ylab="Log hazard ratio", lwd=2.5, xlab="Age (years)", main="Males", col= "turquoise4")
+lines(s, ym.l(s), col= "turquoise")
+lines(s, ym.u(s), col= "turquoise")
 abline(h=coef(coxM)[1], lty=2)
 abline(h=0, col="gray", lty=3)
 mtext("A", line=2, cex=1.5, adj=0)
-plot(yf, ylim=c(-10,10), xlim=c(4, 24), ylab="", lwd=2.5, xlab="Age (years)", main="Females")
-lines(s, yf.l(s))
-lines(s, yf.u(s))
+plot(yf, ylim=c(-10,10), xlim=c(4, 24), ylab="", lwd=2.5, xlab="Age (years)", main="Females", col= "turquoise4")
+lines(s, yf.l(s), col= "turquoise")
+lines(s, yf.u(s), col= "turquoise")
 abline(h=0, col="gray", lty=3)
 abline(h=coef(coxF)[1], lty=2)
 mtext("B", line=2, cex=1.5, adj=0)
